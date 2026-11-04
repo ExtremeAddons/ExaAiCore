@@ -14,3 +14,9 @@
 #    Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #   #
 #   Copyright 2019-2026(C) Andrea Donati
+
+from .installer_ops import EXAAICORE_OT_install_microservice
+
+installer_classes = [
+    EXAAICORE_OT_install_microservice
+]

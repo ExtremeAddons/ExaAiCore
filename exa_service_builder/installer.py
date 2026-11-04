@@ -33,6 +33,8 @@ def get_platform_keys():
     sys_key = os_name
     arch_key = machine_arch
 
+    print("Siamo qui1")
+
     if os_name == "Windows":
         arch_key = "AMD64" if "64" in machine_arch and "arm" not in machine_arch else "ARM64"
     elif os_name == "Darwin":

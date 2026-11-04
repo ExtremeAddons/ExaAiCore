@@ -96,7 +96,7 @@ def background_installer_task(base_path):
             cmd = [sys.executable, "-m", "pip", "install"] + packages
             subprocess.run(cmd)
         """
-        
+
         with open(setup_script, "w") as file:
             file.write(setup_code.strip())
 
@@ -116,6 +116,13 @@ class EXAAICORE_OT_install_microservice(bpy.types.Operator):
     bl_label = "Install ExaAiCore Engine"
     bl_options = {'REGISTER', 'INTERNAL'}
 
+    install_path: bpy.props.StringProperty(
+        name="Install path",
+        description="Absolute path to the ExtremeAddons root folder where the microservice installation folder will be created",
+        options={'HIDDEN'},
+        default="",
+    )
+
     _timer = None
 
     def invoke(self, context, event):
@@ -132,13 +139,20 @@ class EXAAICORE_OT_install_microservice(bpy.types.Operator):
     def execute(self, context):
         global install_thread, install_status, install_error, install_finished
 
+        base_path = os.path.abspath(os.path.expanduser(self.install_path.strip()))
+        if not base_path:
+            self.report({'ERROR'}, "The install path must be provided by the caller.")
+            return {'CANCELLED'}
+
+        self.report({'INFO'}, "Creo Cartella")
+        os.makedirs(base_path, exist_ok=True)
+
         install_status = "Starting background process..."
         install_error = ""
         install_finished = False
 
-        base_path = bpy.utils.user_resource('SCRIPTS', path="addons")
-
         install_thread = threading.Thread(target=background_installer_task, args=(base_path,))
+        install_thread.daemon = True
         install_thread.start()
 
         wm = context.window_manager
@@ -166,3 +180,8 @@ class EXAAICORE_OT_install_microservice(bpy.types.Operator):
                     return {'FINISHED'}
 
         return {'PASS_THROUGH'}
+
+
+
+
+
