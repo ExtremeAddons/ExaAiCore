@@ -1,0 +1,11 @@
+{
+  "manifest_url": "https://raw.githubusercontent.com/ExtremeAddons/ExaAiCore/master/exa_manifest.json",
+  "required_core_version": "1.0.0",
+  "target_folder_name": "ExaAiCore",
+  "pip_packages": [
+    "Pillow==10.2.0",
+    "diffusers==0.27.2",
+    "torch==2.2.0",
+    "torchvision==0.17.0"
+  ]
+}
