@@ -182,3 +182,23 @@ if packages:
         file.write(setup_code.strip())
 
     subprocess.run([python_exe, setup_script], check=True, cwd=target_dir)
+
+
+def generate_requirements_txt(config_path, output_path):
+    """
+    Generate a requirements.txt file from the service config.
+
+    Args:
+        config_path (str): Path to the service_config.json file
+        output_path (str): Path where requirements.txt should be created
+    """
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+
+    # Extract pip packages from config
+    pip_packages = config.get('pip_packages', [])
+
+    # Write to requirements.txt
+    with open(output_path, 'w') as f:
+        for package in pip_packages:
+            f.write(f"{package}\n")

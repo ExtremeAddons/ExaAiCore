@@ -197,31 +197,42 @@ class EXAAICORE_OT_install_microservice(bpy.types.Operator):
 
     def invoke(self, context, event):
         """Ask the user to confirm before starting the installation."""
+        self.confirm_install = 'NO'
         return context.window_manager.invoke_props_dialog(self, width=450)
 
     def draw(self, context):
         """Draw the installation confirmation dialog."""
         layout = self.layout
-        col = layout.column()
         
-        # Add a more detailed status display in the dialog 
-        if install_status != "Idle":
-            row = col.row(align=True)
-            row.label(text="Installation Status:", icon='INFO')
-            
-            sub_col = row.column()  
-            sub_col.scale_y = 0.8
-            sub_col.label(text=install_status, icon_value=get_icon_for_status(install_status))
-            
-            # Add progress bar for installation
-            if install_progress > 0:
-                row = col.row()
-                row.prop(self, "install_progress", text="Progress")
+        # Show what will be installed
+        config_path = os.path.join(os.path.dirname(__file__), "service_config.json")
+        with open(config_path, "r") as file:
+            config = json.load(file)
+
+
         
         layout.separator()
         layout.label(text="Warning: An independent Python environment will be downloaded.", icon='INFO') 
         layout.label(text="This process requires an active internet connection.")
         layout.label(text="Files will be extracted to your disk without altering Blender.")
+
+        # Add a section for what will be installed
+        box = layout.box()
+        b_col = box.column(align=True)
+        b_col.label(text="Installation Details:", icon='INFO')
+        b_col.separator()
+
+        # Show Python version
+        if "python_version" in config:
+            b_col.label(text=f"Python Version: {config['python_version']}")
+
+        # Show pip packages to be installed
+        packages = config.get("pip_packages", [])
+        if packages:
+            b_col.label(text="Pip Packages:")
+            for package in packages:
+                b_col.label(text=f"  • {package}", icon='PACKAGE')
+
         layout.separator()
         layout.label(text="Are you sure you want to proceed?", icon='QUESTION')
         layout.separator()

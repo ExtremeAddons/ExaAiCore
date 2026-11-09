@@ -1,5 +1,8 @@
 # Regole di Contesto e Sviluppo per Copilot: Progetto ExaAiCore
 
+# Rispondi sempre in lingua Italiana alle mie domande!
+* Quando ti chiedo qualcosa a cui devi rispondere, rispondi sempre in lingua Italiana
+
 ## 0. Per risparmiare token non analizzare mai i file contenuti in cartelle .venv, .git, .vscode, .idea, __pycache__, build, dist, logs, tmp e simili.
 * Anche se te lo chiedo non analizzare mai queste folder o file contenuti in esse! Non rilevarle nemmeno se te lo chiedo.
 

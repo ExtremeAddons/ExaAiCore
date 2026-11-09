@@ -16,8 +16,6 @@
 #   Copyright 2019-2026(C) Andrea Donati
 
 
-
-
 import json
 import os
 import subprocess
@@ -41,7 +39,29 @@ def bootstrap_microservice(base_path):
     with urllib.request.urlopen(req) as response:
         manifest = json.loads(response.read().decode())
 
-    download_url = manifest["python_engines"][sys_key][arch_key]
+    # Use python_version from config to determine which Python engine to download
+    python_version = config.get("python_version", "3.11.18")
+    
+    # Get the specific Python version's engine URLs from manifest
+    download_url = None
+    
+    # Try to get the URL from the new structure with python_versions mapping
+    if "python_versions" in manifest:
+        if python_version in manifest["python_versions"]:
+            if sys_key in manifest["python_versions"][python_version]:
+                if arch_key in manifest["python_versions"][python_version][sys_key]:
+                    download_url = manifest["python_versions"][python_version][sys_key][arch_key]
+    
+    # If we couldn't find it, try the old structure for backward compatibility
+    if not download_url:
+        try:
+            download_url = manifest["python_engines"][sys_key][arch_key]
+        except (KeyError, TypeError):
+            raise Exception(f"Could not find Python engine for {python_version} on {sys_key} {arch_key}")
+
+    if not download_url:
+        raise Exception(f"Could not find Python engine URL for {python_version} on {sys_key} {arch_key}")
+
     archive_path = os.path.join(target_dir, "python_engine.tar.gz")
 
     urllib.request.urlretrieve(download_url, archive_path)
@@ -60,7 +80,7 @@ def bootstrap_microservice(base_path):
     setup_script = os.path.join(target_dir, "microservice_setup.py")
     packages_list = json.dumps(config.get("pip_packages", []))
 
-    # Corretto: usiamo il python isolato per installare i pacchetti
+    # Corrected: use the isolated python to install packages
     setup_code = f"""
 import subprocess
 import sys
