@@ -15,8 +15,8 @@
 #   #
 #   Copyright 2019-2026(C) Andrea Donati
 
-from .blender_ops import EXAAICORE_OT_install_microservice
+from .bl_ops_installer import EXAAICORE_OT_installer
 
 installer_classes = [
-    EXAAICORE_OT_install_microservice
+    EXAAICORE_OT_installer
 ]
