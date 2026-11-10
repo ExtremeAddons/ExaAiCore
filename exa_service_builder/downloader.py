@@ -20,9 +20,21 @@ import hashlib
 import urllib.request
 import urllib.error
 
+import os
+import urllib.request
+import urllib.error
+import hashlib
+
+
 class ResourceDownloader:
-    def __init__(self, plan):
+
+    def __init__(self, plan, cancel_event=None):
         self.plan = plan
+        self.cancel_event = cancel_event
+
+    def _check_cancel(self):
+        if self.cancel_event and self.cancel_event.is_set():
+            raise RuntimeError("Operation cancelled.")
 
     def execute_downloads(self):
         global_dir = self.plan.get("global_target_dir")
@@ -31,6 +43,8 @@ class ResourceDownloader:
 
         jobs = self.plan.get("jobs", [])
         for job in jobs:
+            self._check_cancel()
+
             url = job.get("download_url")
             expected_sha = job.get("sha256")
             target_path = job.get("target_path")
@@ -54,6 +68,7 @@ class ResourceDownloader:
                 hasher = hashlib.sha256()
                 with urllib.request.urlopen(url, timeout=30) as response, open(file_destination, "wb") as out_file:
                     while True:
+                        self._check_cancel()
                         chunk = response.read(1048576)
                         if not chunk:
                             break
@@ -65,6 +80,8 @@ class ResourceDownloader:
                     raise ValueError(f"Controllo integrità fallito per la risorsa {name}")
 
             except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as error:
+                self._check_cancel()
                 raise RuntimeError(f"Errore di rete durante il download di {name}: {error}")
             except (IOError, OSError) as error:
+                self._check_cancel()
                 raise RuntimeError(f"Errore di scrittura su disco per {name}: {error}")

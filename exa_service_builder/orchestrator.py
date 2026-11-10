@@ -22,6 +22,7 @@ import queue
 from .config_reader import ConfigReader
 from .downloader import ResourceDownloader
 from .extractor import ResourceExtractor
+from .package_manager import PackageManager
 
 
 class Orchestrator:
@@ -66,21 +67,21 @@ class Orchestrator:
                 return
 
             self.message_queue.put(("RUNNING", "Downloading resources...", 0.2))
-            downloader = ResourceDownloader(plan)
+            downloader = ResourceDownloader(plan, self._cancel_event)
             downloader.execute_downloads()
 
             if self._cancel_event.is_set():
                 return
 
             self.message_queue.put(("RUNNING", "Extracting archives...", 0.6))
-            extractor = ResourceExtractor(plan)
+            extractor = ResourceExtractor(plan, self._cancel_event)
             extractor.execute_extractions()
 
             if self._cancel_event.is_set():
                 return
 
             self.message_queue.put(("RUNNING", "Installing dependencies...", 0.8))
-            manager = PackageManager(plan)
+            manager = PackageManager(plan, self._cancel_event)
             manager.execute_installations()
 
             if self._cancel_event.is_set():

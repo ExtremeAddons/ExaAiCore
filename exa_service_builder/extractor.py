@@ -22,19 +22,31 @@ import tarfile
 import zipfile
 
 
+import os
+import shutil
+import tarfile
+import zipfile
+
+
 class ResourceExtractor:
     """
     Scansiona i percorsi di destinazione e decompone automaticamente qualsiasi archivio valido trovato,
     normalizzando la struttura nel caso in cui l archivio contenga una cartella radice isolata.
     """
 
-    def __init__(self, plan):
+    def __init__(self, plan, cancel_event=None):
         self.plan = plan
+        self.cancel_event = cancel_event
+
+    def _check_cancel(self):
+        if self.cancel_event and self.cancel_event.is_set():
+            raise RuntimeError("Operation cancelled.")
 
     def execute_extractions(self):
         jobs = self.plan.get("jobs", [])
 
         for job in jobs:
+            self._check_cancel()
             target_path = job.get("target_path")
             name = job.get("name")
 
@@ -43,25 +55,30 @@ class ResourceExtractor:
 
             elif os.path.exists(target_path):
                 for filename in os.listdir(target_path):
+                    self._check_cancel()
                     file_path = os.path.join(target_path, filename)
                     if os.path.isfile(file_path):
                         self._process_file(file_path, target_path, name)
 
     def _process_file(self, file_path, extract_dir, name):
         try:
+            self._check_cancel()
             contents_before = set(os.listdir(extract_dir))
 
             if tarfile.is_tarfile(file_path):
                 with tarfile.open(file_path, "r:*") as archive:
+                    self._check_cancel()
                     archive.extractall(extract_dir)
                 os.remove(file_path)
             elif zipfile.is_zipfile(file_path):
                 with zipfile.ZipFile(file_path, "r") as archive:
+                    self._check_cancel()
                     archive.extractall(extract_dir)
                 os.remove(file_path)
             else:
                 return
 
+            self._check_cancel()
             contents_after = set(os.listdir(extract_dir))
             new_items = list(contents_after - contents_before)
 
@@ -73,6 +90,7 @@ class ResourceExtractor:
 
                 if os.path.isdir(wrapper_path):
                     for sub_item in os.listdir(wrapper_path):
+                        self._check_cancel()
                         src_item = os.path.join(wrapper_path, sub_item)
                         dst_item = os.path.join(extract_dir, sub_item)
                         if os.path.exists(dst_item):
@@ -84,4 +102,5 @@ class ResourceExtractor:
                     os.rmdir(wrapper_path)
 
         except Exception as error:
+            self._check_cancel()
             raise RuntimeError(f"Errore durante l estrazione della risorsa {name}: {error}")

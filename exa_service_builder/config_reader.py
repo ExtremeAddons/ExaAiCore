@@ -17,9 +17,10 @@
 
 import json
 import os
-import platform
 import urllib.request
 import urllib.error
+
+from .platform_detector import PlatformDetector
 
 
 class ConfigReader:
@@ -27,17 +28,18 @@ class ConfigReader:
     Legge la configurazione e genera un piano di installazione universale ed estendibile.
     """
     def __init__(self, base_path):
+        self.cancel_event = None
         self.base_path = base_path
         self.config_path = os.path.join(os.path.dirname(__file__), "service_config.json")
         self.local_config = self._read_local_config()
         self.manifest = self._fetch_remote_manifest(self.local_config.get("manifest_url"))
 
-        self.os_name = platform.system()
-        self.arch_name = platform.machine()
+        self.os_name, self.arch_name = PlatformDetector.get_platform_keys()
         self.global_target_dir = os.path.join(
             self.base_path,
             self.local_config.get("target_folder_name", "ExaAiCore")
         )
+
 
     def _read_local_config(self):
         with open(self.config_path, "r", encoding="utf_8") as file:
@@ -74,7 +76,6 @@ class ConfigReader:
             "jobs": []
         }
 
-        # Elaborazione Runtimes
         local_runtimes = self.local_config.get("runtimes", [])
         manifest_runtimes = self.manifest.get("runtimes", {})
 
@@ -100,7 +101,6 @@ class ConfigReader:
                 "dependencies": runtime.get("dependencies", [])
             })
 
-        # Elaborazione Asset Statici
         local_assets = self.local_config.get("assets", [])
         manifest_assets = self.manifest.get("assets", {})
 

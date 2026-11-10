@@ -10,6 +10,13 @@
       ]
     }
   ],
+  "assets": [
+    {
+      "name": "lama_fp32.onnx",
+      "version": "Universal",
+      "target_subfolder": "models/lama_fp32.onnx"
+    }
+  ],
   "manifest_url": "https://cdn.jsdelivr.net/gh/ExtremeAddons/ExaAiCore@master/exa_service_builder/exa_manifest.json",
   "target_folder_name": "ExaAiCore"
 }
