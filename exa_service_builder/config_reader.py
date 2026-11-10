@@ -21,6 +21,7 @@ import platform
 import urllib.request
 import urllib.error
 
+
 class ConfigReader:
     """
     Legge la configurazione e genera un piano di installazione universale ed estendibile.
@@ -44,7 +45,7 @@ class ConfigReader:
 
     def _fetch_remote_manifest(self, url):
         if not url:
-            raise ValueError("Manca il manifest_url nella configurazione")
+            raise ValueError("Manca il manifest url nella configurazione")
         try:
             with urllib.request.urlopen(url) as response:
                 return json.loads(response.read().decode("utf_8"))
@@ -73,7 +74,7 @@ class ConfigReader:
             "jobs": []
         }
 
-        # Elaborazione Runtimes (Python, PHP, Node, ecc. con i loro package manager)
+        # Elaborazione Runtimes
         local_runtimes = self.local_config.get("runtimes", [])
         manifest_runtimes = self.manifest.get("runtimes", {})
 
@@ -82,8 +83,9 @@ class ConfigReader:
             version = runtime.get("version")
             subfolder = runtime.get("target_subfolder", name)
 
-            engine_node = manifest_runtimes.get(name)
-            resource_info = self._resolve_resource(engine_node, version)
+            engine_node = manifest_runtimes.get(name, {})
+            versions_node = engine_node.get("versions", {})
+            resource_info = self._resolve_resource(versions_node, version)
 
             plan["jobs"].append({
                 "type": "runtime",
@@ -91,11 +93,14 @@ class ConfigReader:
                 "version": version,
                 "download_url": resource_info.get("url"),
                 "sha256": resource_info.get("sha256"),
+                "executable": resource_info.get("executable"),
                 "target_path": os.path.join(self.global_target_dir, subfolder),
-                "package_manager": runtime.get("dependencies", [])
+                "package_manager": engine_node.get("package_manager"),
+                "args": engine_node.get("args", []),
+                "dependencies": runtime.get("dependencies", [])
             })
 
-        # Elaborazione Asset Statici (modelli ONNX, file di supporto)
+        # Elaborazione Asset Statici
         local_assets = self.local_config.get("assets", [])
         manifest_assets = self.manifest.get("assets", {})
 
