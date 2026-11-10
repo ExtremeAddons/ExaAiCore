@@ -1,6 +1,19 @@
-"""
-Module for reading configuration files and building the installation plan
-"""
+#   #
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of the GNU General Public License
+#    as published by the Free Software Foundation; either version
+#    of the License, or (at your option) any later version.
+#   #
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#   #
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software Foundation,
+#    Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#   #
+#   Copyright 2019-2026(C) Andrea Donati
 
 import json
 import os
@@ -10,117 +23,97 @@ import urllib.error
 
 class ConfigReader:
     """
-    A class to read the local config, fetch the remote manifest,
-    and generate a unified installation plan.
+    Legge la configurazione e genera un piano di installazione universale ed estendibile.
     """
+    def __init__(self, base_path):
+        self.base_path = base_path
+        self.config_path = os.path.join(os.path.dirname(__file__), "service_config.json")
+        self.local_config = self._read_local_config()
+        self.manifest = self._fetch_remote_manifest(self.local_config.get("manifest_url"))
 
-    @staticmethod
-    def read_local_config(config_path):
-        """Legge il file JSON di configurazione locale."""
-        with open(config_path, "r", encoding="utf_8") as file:
+        self.os_name = platform.system()
+        self.arch_name = platform.machine()
+        self.global_target_dir = os.path.join(
+            self.base_path,
+            self.local_config.get("target_folder_name", "ExaAiCore")
+        )
+
+    def _read_local_config(self):
+        with open(self.config_path, "r", encoding="utf_8") as file:
             return json.load(file)
 
-    @staticmethod
-    def fetch_remote_manifest(url):
-        """Scarica e converte in dizionario il manifest remoto."""
+    def _fetch_remote_manifest(self, url):
+        if not url:
+            raise ValueError("Manca il manifest_url nella configurazione")
         try:
             with urllib.request.urlopen(url) as response:
                 return json.loads(response.read().decode("utf_8"))
         except urllib.error.URLError as error:
             raise RuntimeError(f"Errore nel download del manifest: {error}")
 
-    @staticmethod
-    def resolve_url(manifest_node, version, os_name, arch_name):
-        """
-        Risolve URL cercando la corrispondenza hardware esatta.
-        Se presente una versione scende di livello.
-        Ripiega su Universal se la risorsa è multipiattaforma.
-        """
+    def _resolve_resource(self, manifest_node, version):
         if not manifest_node:
-            return None
-
-        # Navigazione condizionale basata sulla versione
+            return {}
         target_node = manifest_node.get(version, {}) if version else manifest_node
-
-        # Tentativo per Sistema Operativo e Architettura
         try:
-            return target_node[os_name][arch_name]
+            return target_node[self.os_name][self.arch_name]
         except KeyError:
             pass
-
-        # Tentativo per file Universale
         try:
             return target_node["Universal"]["Universal"]
         except KeyError:
-            return None
+            return {}
 
-    @staticmethod
-    def build_installation_plan(base_path):
+    def get_installation_plan(self):
         """
-        Genera il piano di installazione completo unendo config locale e manifest remoto.
+        Restituisce il piano universale completo per il download e la gestione dei pacchetti.
         """
-        # Lettura configurazione
-        config_path = os.path.join(os.path.dirname(__file__), "service_config.json")
-        config = ConfigReader.read_local_config(config_path)
-
-        manifest_url = config.get("manifest_url")
-        if not manifest_url:
-            raise ValueError("Manca il manifest_url nel file di configurazione")
-
-        manifest = ConfigReader.fetch_remote_manifest(manifest_url)
-
-        # Preparazione ambiente
-        target_folder = config.get("target_folder_name", "ExaAiCore")
-        global_target_dir = os.path.join(base_path, target_folder)
-
-        os_name = platform.system()
-        arch_name = platform.machine()
-
-        # Struttura del piano di esecuzione
         plan = {
-            "global_target_dir": global_target_dir,
+            "global_target_dir": self.global_target_dir,
             "jobs": []
         }
 
-        # Processamento dei Motori
-        runtimes = config.get("runtimes", [])
-        manifest_engines = manifest.get("engines", {})
+        # Elaborazione Runtimes (Python, PHP, Node, ecc. con i loro package manager)
+        local_runtimes = self.local_config.get("runtimes", [])
+        manifest_runtimes = self.manifest.get("runtimes", {})
 
-        for runtime in runtimes:
+        for runtime in local_runtimes:
             name = runtime.get("name")
             version = runtime.get("version")
             subfolder = runtime.get("target_subfolder", name)
 
-            engine_node = manifest_engines.get(name)
-            download_url = ConfigReader.resolve_url(engine_node, version, os_name, arch_name)
+            engine_node = manifest_runtimes.get(name)
+            resource_info = self._resolve_resource(engine_node, version)
 
             plan["jobs"].append({
                 "type": "runtime",
                 "name": name,
                 "version": version,
-                "download_url": download_url,
-                "target_path": os.path.join(global_target_dir, subfolder),
-                "dependencies": runtime.get("dependencies", [])
+                "download_url": resource_info.get("url"),
+                "sha256": resource_info.get("sha256"),
+                "target_path": os.path.join(self.global_target_dir, subfolder),
+                "package_manager": runtime.get("dependencies", [])
             })
 
-        # Processamento degli Asset Statici
-        assets = config.get("assets", [])
-        manifest_assets = manifest.get("assets", {})
+        # Elaborazione Asset Statici (modelli ONNX, file di supporto)
+        local_assets = self.local_config.get("assets", [])
+        manifest_assets = self.manifest.get("assets", {})
 
-        for asset in assets:
+        for asset in local_assets:
             name = asset.get("name")
             version = asset.get("version")
             subfolder = asset.get("target_subfolder", name)
 
             asset_node = manifest_assets.get(name)
-            download_url = ConfigReader.resolve_url(asset_node, version, os_name, arch_name)
+            resource_info = self._resolve_resource(asset_node, version)
 
             plan["jobs"].append({
                 "type": "asset",
                 "name": name,
                 "version": version,
-                "download_url": download_url,
-                "target_path": os.path.join(global_target_dir, subfolder)
+                "download_url": resource_info.get("url"),
+                "sha256": resource_info.get("sha256"),
+                "target_path": os.path.join(self.global_target_dir, subfolder)
             })
 
         return plan
