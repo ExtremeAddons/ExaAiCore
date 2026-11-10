@@ -5,14 +5,8 @@
       "version": "3.11.18",
       "target_subfolder": "python_env",
       "dependencies": [
-        {
-          "manager": "pip",
-          "args": ["-m", "pip", "install"],
-          "packages": [
-            "Pillow==10.2.0",
-            "opencv-python==4.9.0.80"
-          ]
-        }
+        "Pillow==10.2.0",
+        "opencv-python==4.9.0.80"
       ]
     }
   ],
