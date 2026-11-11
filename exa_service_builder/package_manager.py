@@ -17,6 +17,7 @@
 
 
 import os
+import stat
 import subprocess
 import threading
 
@@ -55,6 +56,16 @@ class PackageManager:
             executable_path = os.path.join(target_path, executable)
             if not os.path.exists(executable_path):
                 raise FileNotFoundError(f"Eseguibile non trovato in {executable_path}")
+
+            if os.name != "nt":
+                try:
+                    current_mode = os.stat(executable_path).st_mode
+                    os.chmod(
+                        executable_path,
+                        current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+                    )
+                except Exception:
+                    pass
 
             cmd = [executable_path] + args + dependencies
 

@@ -19,14 +19,28 @@
 import json
 import os
 import queue
+import shutil
+
 import bpy
 from .orchestrator import Orchestrator
+from .bl_draw import Draw
 
 
 class EXAAICORE_OT_installer(bpy.types.Operator):
     bl_idname = "exa.install_microservice"
     bl_label = "Install ExaAiCore Engine"
     bl_options = {'REGISTER', 'INTERNAL'}
+
+
+    options: bpy.props.EnumProperty(
+        name="Options",
+        description="Choose an option",
+        items=[
+            ('INSTALL', "Install", "Install the microservice"),
+            ('UNINSTALL', "Uninstall", "Uninstall the microservice")
+        ],
+        default='INSTALL'
+    )
 
     install_path: bpy.props.StringProperty(
         name="Install path",
@@ -44,12 +58,12 @@ class EXAAICORE_OT_installer(bpy.types.Operator):
         subtype='PERCENTAGE'
     )
 
-    confirm_install: bpy.props.EnumProperty(
-        name="Confirm Installation",
-        description="Confirm that you want to proceed with the installation",
+    confirm: bpy.props.EnumProperty(
+        name="Confirm",
+        description="Confirm that you want to proceed",
         items=[
-            ('YES', "Yes", "Proceed with installation"),
-            ('NO', "No", "Cancel installation")
+            ('YES', "Yes", "Proceed"),
+            ('NO', "No", "Cancel")
         ],
         default='NO'
     )
@@ -60,7 +74,7 @@ class EXAAICORE_OT_installer(bpy.types.Operator):
 
     def invoke(self, context, event):
         self._load_config()
-        self.confirm_install = 'NO'
+        self.confirm = 'NO'
         return context.window_manager.invoke_props_dialog(self, width=450)
 
     def _load_config(self):
@@ -73,53 +87,59 @@ class EXAAICORE_OT_installer(bpy.types.Operator):
 
 
     def draw(self, context):
-        layout = self.layout
+        if self.options == 'INSTALL':
+            self._popup_install(context)
+        elif self.options == 'UNINSTALL':
+            self._popup_install(context)
 
-        config = self._cached_config or {}
+
+    def _popup_install(self, context):
+        layout = self.layout
 
         layout.separator()
         layout.label(text="Warning: Independent runtimes and assets will be downloaded.", icon='INFO')
         layout.label(text="This process requires an active internet connection.")
         layout.label(text="Files will be extracted to your disk without altering Blender.")
 
-        box = layout.box()
-        b_col = box.column(align=True)
-        b_col.label(text="Installation Details:", icon='INFO')
-        b_col.separator()
 
-        # Visualizzazione universale dei Runtimes
-        runtimes = config.get("runtimes", [])
-        for runtime in runtimes:
-            rt_name = runtime.get("name", "runtime")
-            rt_version = runtime.get("version", "")
-            b_col.label(text=f"Runtime: {rt_name} version {rt_version}")
-            deps = runtime.get("dependencies", [])
-            if deps:
-                b_col.label(text="Dependencies:")
-                for dep in deps:
-                    b_col.label(text=f"  {dep}", icon='PACKAGE')
+        Draw(extreme_addons_path=self.install_path).draw_requirement_files(layout, use_box=True)
 
-        # Visualizzazione universale degli Asset
-        assets = config.get("assets", [])
-        if assets:
-            b_col.separator()
-            b_col.label(text="Assets:")
-            for asset in assets:
-                ast_name = asset.get("name", "asset")
-                ast_dest = asset.get("target_subfolder", "")
-                b_col.label(text=f"  {ast_name} -> {ast_dest}", icon='FILE_BACKUP')
 
         layout.separator()
         layout.label(text="Are you sure you want to proceed?", icon='QUESTION')
         layout.separator()
 
         row = layout.row()
-        row.prop(self, "confirm_install", expand=True)
+        row.prop(self, "confirm", expand=True)
+
+        layout.separator()
+
+    def _popup_uninstall(self, context):
+        layout = self.layout
+
+        layout.separator()
+        layout.label(text="Warning: This will remove the ExaAiCore engine and its assets.", icon='ERROR')
+        layout.label(text="This process will delete files from your disk.")
+        layout.label(text="Are you sure you want to proceed?")
+
+        layout.separator()
+
+        row = layout.row()
+        row.prop(self, "confirm", expand=True)
 
         layout.separator()
 
     def execute(self, context):
-        if self.confirm_install == 'NO':
+
+        if self.options == 'INSTALL':
+            return self._install(context)
+        elif self.options == 'UNINSTALL':
+            return self._uninstall(context)
+
+        return {'FINISHED'}
+
+    def _install(self, context):
+        if self.confirm == 'NO':
             self.report({'INFO'}, "Installation cancelled by user.")
             return {'CANCELLED'}
 
@@ -189,3 +209,23 @@ class EXAAICORE_OT_installer(bpy.types.Operator):
             context.area.tag_redraw()
 
         return {'PASS_THROUGH'}
+    
+    def _uninstall(self, context):
+        
+        base_path = os.path.abspath(os.path.expanduser(self.install_path.strip()))
+        if not base_path:
+            self.report({'ERROR'}, "Install path is missing.")
+            return {'CANCELLED'}
+
+        target_dir = os.path.join(base_path, "ExaAiCore")
+
+        if os.path.exists(target_dir):
+            print("Simulazione di rimozione della cartella:", target_dir)
+            # try:
+            #     shutil.rmtree(target_dir)
+            #     self.report({'INFO'}, "ExaAiCore engine removed successfully.")
+            # except Exception as error:
+            #     self.report({'ERROR'}, f"Failed to remove folder: {error}")
+            #     return {'CANCELLED'}
+
+        return {'FINISHED'}

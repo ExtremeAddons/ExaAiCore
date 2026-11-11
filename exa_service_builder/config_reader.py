@@ -57,13 +57,26 @@ class ConfigReader:
     def _resolve_resource(self, manifest_node, version):
         if not manifest_node:
             return {}
+        if isinstance(manifest_node, dict) and "url" in manifest_node:
+            return manifest_node
+
         target_node = manifest_node.get(version, {}) if version else manifest_node
+        if not target_node:
+            return {}
+
+        if isinstance(target_node, dict) and "url" in target_node:
+            return target_node
+
         try:
             return target_node[self.os_name][self.arch_name]
         except KeyError:
             pass
         try:
             return target_node["Universal"]["Universal"]
+        except KeyError:
+            pass
+        try:
+            return target_node["Universal"]
         except KeyError:
             return {}
 
