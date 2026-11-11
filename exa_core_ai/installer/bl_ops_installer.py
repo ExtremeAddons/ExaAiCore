@@ -22,13 +22,13 @@ import queue
 import shutil
 
 import bpy
-from .orchestrator import Orchestrator
-from .bl_draw import Draw
+from exa_service.installer.orchestrator import Orchestrator
+from exa_service.installer.bl_draw import Draw
 
 
 class EXAAICORE_OT_installer(bpy.types.Operator):
     bl_idname = "exa.install_microservice"
-    bl_label = "Install ExaAiCore Engine"
+    bl_label = "Install ExaCoreAi Engine"
     bl_options = {'REGISTER', 'INTERNAL'}
 
     options: bpy.props.EnumProperty(
@@ -92,7 +92,7 @@ class EXAAICORE_OT_installer(bpy.types.Operator):
     def _load_config(self):
         if self._cached_config is not None:
             return
-        config_path = os.path.join(os.path.dirname(__file__), "service_config.json")
+        config_path = os.path.join(os.path.dirname(__file__), "../service_config.json")
         with open(config_path, "r", encoding="utf_8") as file:
             self._cached_config = json.load(file)
 
@@ -122,7 +122,7 @@ class EXAAICORE_OT_installer(bpy.types.Operator):
     def _popup_uninstall(self, context):
         layout = self.layout
         layout.separator()
-        layout.label(text="Warning: This will remove the ExaAiCore engine and its assets.", icon='ERROR')
+        layout.label(text="Warning: This will remove the ExaCoreAi engine and its assets.", icon='ERROR')
         layout.label(text="This process will delete files from your disk.")
         layout.label(text="Are you sure you want to proceed?")
         layout.separator()
@@ -225,12 +225,12 @@ class EXAAICORE_OT_installer(bpy.types.Operator):
             self.report({'ERROR'}, "Install path is missing.")
             return {'CANCELLED'}
 
-        target_dir = os.path.join(base_path, "ExaAiCore")
+        target_dir = os.path.join(base_path, "ExaCoreAi")
 
         if os.path.exists(target_dir):
             try:
                 shutil.rmtree(target_dir)
-                self.report({'INFO'}, "ExaAiCore engine removed successfully.")
+                self.report({'INFO'}, "ExaCoreAi engine removed successfully.")
             except Exception as error:
                 self.report({'ERROR'}, f"Failed to remove folder: {error}")
                 self._cleanup_wm_props(context)

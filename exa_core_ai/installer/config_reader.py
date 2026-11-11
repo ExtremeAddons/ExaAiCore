@@ -20,7 +20,7 @@ import os
 import urllib.request
 import urllib.error
 
-from .platform_detector import PlatformDetector
+from exa_service.installer.platform_detector import PlatformDetector
 
 
 class ConfigReader:
@@ -30,14 +30,14 @@ class ConfigReader:
     def __init__(self, base_path):
         self.cancel_event = None
         self.base_path = base_path
-        self.config_path = os.path.join(os.path.dirname(__file__), "service_config.json")
+        self.config_path = os.path.join(os.path.dirname(__file__), "../service_config.json")
         self.local_config = self._read_local_config()
         self.manifest = self._fetch_remote_manifest(self.local_config.get("manifest_url"))
 
         self.os_name, self.arch_name = PlatformDetector.get_platform_keys()
         self.global_target_dir = os.path.join(
             self.base_path,
-            self.local_config.get("target_folder_name", "ExaAiCore")
+            self.local_config.get("target_folder_name", "ExaCoreAi")
         )
 
 

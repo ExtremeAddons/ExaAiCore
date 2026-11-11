@@ -6,7 +6,8 @@
       "target_subfolder": "python_env",
       "dependencies": [
         "Pillow==10.2.0",
-        "opencv-python==4.9.0.80"
+        "opencv-python==4.9.0.80",
+        "onnxruntime"
       ]
     }
   ],

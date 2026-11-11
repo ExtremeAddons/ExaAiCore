@@ -15,24 +15,22 @@
 #   #
 #   Copyright 2019-2026(C) Andrea Donati
 
-import bpy
-from .bl_ops_installer import EXAAICORE_OT_installer
-from .custom_icons import CustomIconManager
+from .core_process import CoreProcess
 
-installer_classes = [
-    EXAAICORE_OT_installer
-]
+_core = CoreProcess()
 
 
-def register_ai_exa_core():
-    for cls in installer_classes:
-        bpy.utils.register_class(cls)
+class Bridge:
 
-    CustomIconManager().register()
+    def run(self, *args, **kwargs):
 
+        process = _core.start()
 
-def unregister_ai_exa_core():
-    for cls in installer_classes:
-        bpy.utils.unregister_class(cls)
+        # Invio richiesta tramite stdin
+        # Ricezione risposta tramite stdout
+        # Decodifica del risultato
 
-    CustomIconManager().unregister()
+        pass
+
+    def close(self):
+        _core.close()

@@ -27,7 +27,7 @@ class ServiceValidator:
 
     def __init__(self, base_path):
         self.base_path = base_path
-        self.config_path = os.path.join(os.path.dirname(__file__), "service_config.json")
+        self.config_path = os.path.join(os.path.dirname(__file__), "../service_config.json")
 
     def get_resource_lists(self) -> dict:
         """
@@ -80,7 +80,7 @@ class ServiceValidator:
             return False
 
 
-        target_folder_name = config.get("target_folder_name", "ExaAiCore")
+        target_folder_name = config.get("target_folder_name", "ExaCoreAi")
         global_target_dir = os.path.join(self.base_path, target_folder_name)
 
         if not os.path.exists(global_target_dir):

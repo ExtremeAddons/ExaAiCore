@@ -19,10 +19,10 @@
 import queue
 import threading
 
-from .config_reader import ConfigReader
-from .downloader import ResourceDownloader
-from .extractor import ResourceExtractor
-from .package_manager import PackageManager
+from exa_service.installer.config_reader import ConfigReader
+from exa_service.installer.downloader import ResourceDownloader
+from exa_service.installer.extractor import ResourceExtractor
+from exa_service.installer.package_manager import PackageManager
 
 
 class Orchestrator:
