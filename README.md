@@ -1,6 +1,6 @@
-# ExaAiCore
+# ExaCoreAi
 
-ExaAiCore is a modular architecture designed to deploy and manage isolated Python environments called microservices for Blender addons, such as HDRi Maker. The primary goal is to run heavy AI frameworks like PyTorch and Diffusers in a completely separate process, preventing dependency conflicts with Blender's native Python interpreter and avoiding UI blocking or crashes.
+ExaCoreAi is a modular architecture designed to deploy and manage isolated Python environments called microservices for Blender addons, such as HDRi Maker. The primary goal is to run heavy AI frameworks like PyTorch and Diffusers in a completely separate process, preventing dependency conflicts with Blender's native Python interpreter and avoiding UI blocking or crashes.
 
 ## Architecture
 
