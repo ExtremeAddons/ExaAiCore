@@ -15,8 +15,24 @@
 #   #
 #   Copyright 2019-2026(C) Andrea Donati
 
+import bpy
 from .bl_ops_installer import EXAAICORE_OT_installer
+from .custom_icons import CustomIconManager
 
 installer_classes = [
     EXAAICORE_OT_installer
 ]
+
+
+def register_ai_exa_core():
+    for cls in installer_classes:
+        bpy.utils.register_class(cls)
+
+    CustomIconManager().register()
+
+
+def unregister_ai_exa_core():
+    for cls in installer_classes:
+        bpy.utils.unregister_class(cls)
+
+    CustomIconManager().unregister()

@@ -16,8 +16,8 @@
 #   Copyright 2019-2026(C) Andrea Donati
 
 
-import threading
 import queue
+import threading
 
 from .config_reader import ConfigReader
 from .downloader import ResourceDownloader
@@ -26,10 +26,6 @@ from .package_manager import PackageManager
 
 
 class Orchestrator:
-    """
-    Coordinates the background pipeline and manages bidirectional communication with Blender.
-    """
-
     def __init__(self, base_path):
         self.base_path = base_path
         self.message_queue = queue.Queue()
@@ -42,50 +38,46 @@ class Orchestrator:
         self.thread.start()
 
     def request_cancel(self):
-        """
-        Allows Blender to request cancellation of the operation.
-        """
         self._cancel_event.set()
         self.message_queue.put(("CANCELLED", "Cancellation requested by user.", 0.0))
 
     def _run_pipeline(self):
         try:
-            self.message_queue.put(("RUNNING", "Reading configuration...", 0.05))
+            self.message_queue.put(("RUNNING", "Reading configuration...", 0.02))
 
-            if self._cancel_event.is_set():
-                return
+            if self._cancel_event.is_set(): return
 
             reader = ConfigReader(self.base_path)
             plan = reader.get_installation_plan()
-
-            jobs = plan.get("jobs", [])
-            if not jobs:
+            if not plan.get("jobs", []):
                 self.message_queue.put(("FINISHED", "No work to execute.", 1.0))
                 return
 
-            if self._cancel_event.is_set():
-                return
+            self.message_queue.put(("RUNNING", "Starting downloads...", 0.05))
 
-            self.message_queue.put(("RUNNING", "Downloading resources...", 0.2))
-            downloader = ResourceDownloader(plan, self._cancel_event)
+            # Passa self.message_queue al Downloader in modo che possa parlare con l'interfaccia
+            downloader = ResourceDownloader(
+                plan,
+                cancel_event=self._cancel_event,
+                message_queue=self.message_queue,
+                base_progress=0.05,
+                max_progress=0.70
+            )
             downloader.execute_downloads()
 
-            if self._cancel_event.is_set():
-                return
+            if self._cancel_event.is_set(): return
 
-            self.message_queue.put(("RUNNING", "Extracting archives...", 0.6))
+            self.message_queue.put(("RUNNING", "Extracting archives...", 0.70))
             extractor = ResourceExtractor(plan, self._cancel_event)
             extractor.execute_extractions()
 
-            if self._cancel_event.is_set():
-                return
+            if self._cancel_event.is_set(): return
 
-            self.message_queue.put(("RUNNING", "Installing dependencies...", 0.8))
+            self.message_queue.put(("RUNNING", "Installing dependencies...", 0.85))
             manager = PackageManager(plan, self._cancel_event)
             manager.execute_installations()
 
-            if self._cancel_event.is_set():
-                return
+            if self._cancel_event.is_set(): return
 
             self.message_queue.put(("FINISHED", "Installation completed successfully!", 1.0))
 
