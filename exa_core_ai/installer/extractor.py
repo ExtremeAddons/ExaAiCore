@@ -22,12 +22,6 @@ import tarfile
 import zipfile
 
 
-import os
-import shutil
-import tarfile
-import zipfile
-
-
 class ResourceExtractor:
     """
     Scansiona i percorsi di destinazione e decompone automaticamente qualsiasi archivio valido trovato,

@@ -17,9 +17,10 @@
 
 import bpy
 
-from exa_service.installer.bl_draw import EXAAICORE_OT_toggle_details
-from exa_service.installer.bl_ops_installer import EXAAICORE_OT_installer
-from exa_service.icons.custom_icons import CustomIconManager
+from .icons import register_custom_icons, unregister_custom_icons
+from .installer.bl_draw import EXAAICORE_OT_toggle_details
+from .installer.bl_ops_installer import EXAAICORE_OT_installer
+
 
 installer_classes = [
     EXAAICORE_OT_installer,
@@ -31,11 +32,11 @@ def register_ai_exa_core():
     for cls in installer_classes:
         bpy.utils.register_class(cls)
 
-    CustomIconManager().register()
+    register_custom_icons()
 
 
 def unregister_ai_exa_core():
     for cls in installer_classes:
         bpy.utils.unregister_class(cls)
 
-    CustomIconManager().unregister()
+    unregister_custom_icons()

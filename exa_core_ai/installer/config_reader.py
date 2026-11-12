@@ -20,7 +20,7 @@ import os
 import urllib.request
 import urllib.error
 
-from exa_service.installer.platform_detector import PlatformDetector
+from .platform_detector import PlatformDetector
 
 
 class ConfigReader:

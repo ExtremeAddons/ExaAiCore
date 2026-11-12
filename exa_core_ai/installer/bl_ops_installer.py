@@ -22,8 +22,8 @@ import queue
 import shutil
 
 import bpy
-from exa_service.installer.orchestrator import Orchestrator
-from exa_service.installer.bl_draw import Draw
+from .orchestrator import Orchestrator
+from .bl_draw import Draw
 
 
 class EXAAICORE_OT_installer(bpy.types.Operator):
