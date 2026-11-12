@@ -15,22 +15,53 @@
 #   #
 #   Copyright 2019-2026(C) Andrea Donati
 
+import pickle
+import struct
 from .core_process import CoreProcess
-
-_core = CoreProcess()
 
 
 class Bridge:
+    def __init__(self, python_executable, bridge_in_path, payload_dir):
+        self.payload_dir = payload_dir
+        self._core = CoreProcess(python_executable, bridge_in_path)
 
-    def run(self, *args, **kwargs):
+    def run(self, module, function, args=None, kwargs=None):
+        if args is None:
+            args = ()
+        if kwargs is None:
+            kwargs = {}
 
-        process = _core.start()
+        process = self._core.start()
 
-        # Invio richiesta tramite stdin
-        # Ricezione risposta tramite stdout
-        # Decodifica del risultato
+        request_data = {
+            "sys_path": self.payload_dir,
+            "module": module,
+            "function": function,
+            "args": args,
+            "kwargs": kwargs
+        }
 
-        pass
+        serialized_request = pickle.dumps(request_data)
+
+        # Inviamo la lunghezza del pacchetto seguita dai dati serializzati
+        header = struct.pack('>I', len(serialized_request))
+        process.stdin.write(header + serialized_request)
+        process.stdin.flush()
+
+        # Leggiamo la risposta del microservizio utilizzando il prefisso di lunghezza
+        raw_len = process.stdout.read(4)
+        if not raw_len:
+            raise RuntimeError("Il microservizio ha chiuso la connessione inaspettatamente.")
+
+        response_length = struct.unpack('>I', raw_len)[0]
+        response_bytes = process.stdout.read(response_length)
+
+        response = pickle.loads(response_bytes)
+
+        if not response.get("success"):
+            raise RuntimeError(f"Errore nel microservizio:\n{response.get('error')}\n{response.get('trace')}")
+
+        return response.get("result")
 
     def close(self):
-        _core.close()
+        self._core.close()

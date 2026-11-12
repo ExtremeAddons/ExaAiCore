@@ -22,6 +22,7 @@ import threading
 from .config_reader import ConfigReader
 from .downloader import ResourceDownloader
 from .extractor import ResourceExtractor
+from .local_config_writer import LocalConfigWriter
 from .package_manager import PackageManager
 
 
@@ -78,6 +79,10 @@ class Orchestrator:
             manager.execute_installations()
 
             if self._cancel_event.is_set(): return
+
+            from .local_config_writer import LocalConfigWriter
+            writer = LocalConfigWriter(plan)
+            writer.write_config()
 
             self.message_queue.put(("FINISHED", "Installation completed successfully!", 1.0))
 

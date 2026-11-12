@@ -35,7 +35,13 @@ def register_ai_exa_core():
     register_custom_icons()
 
 
+
 def unregister_ai_exa_core():
+
+    from .py_bridge import bridge
+    if bridge is not None:
+        bridge.close() # Chiude l'eventuale python isolato come demone se è stato avviato
+
     for cls in installer_classes:
         bpy.utils.unregister_class(cls)
 
