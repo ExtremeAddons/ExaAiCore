@@ -27,26 +27,60 @@ import struct
 import traceback
 import importlib
 
+active_instances = {}
+
+def resolve_target(module_name, target_path):
+    mod = importlib.import_module(module_name)
+    target = mod
+    for attr in target_path.split("."):
+        target = getattr(target, attr)
+    return target
+
 def main():
     while True:
-        raw_len = sys.stdin.buffer.read(4)
-        if not raw_len:
-            break
-        length = struct.unpack(">I", raw_len)[0]
-        payload_data = sys.stdin.buffer.read(length)
-        if not payload_data:
-            break
         try:
+            raw_len = sys.stdin.buffer.read(4)
+            if not raw_len:
+                break
+            length = struct.unpack(">I", raw_len)[0]
+            payload_data = sys.stdin.buffer.read(length)
+            if not payload_data:
+                break
+            
             payload = pickle.loads(payload_data)
             addon_path = payload.get("sys_path")
+            
             if addon_path and addon_path not in sys.path:
                 sys.path.insert(0, addon_path)
-            mod = importlib.import_module(payload["module"])
-            func = getattr(mod, payload["function"])
-            result = func(*payload.get("args", ()), **payload.get("kwargs", {}))
+            
+            action = payload.get("action", "run_function")
+            
+            if action == "run_function":
+                target = resolve_target(payload["module"], payload["function"])
+                result = target(*payload.get("args", ()), **payload.get("kwargs", {}))
+                
+            elif action == "instantiate":
+                target = resolve_target(payload["module"], payload["class_name"])
+                instance = target(*payload.get("args", ()), **payload.get("kwargs", {}))
+                instance_id = str(id(instance))
+                active_instances[instance_id] = instance
+                result = instance_id
+                
+            elif action == "call_method":
+                instance_id = payload["instance_id"]
+                instance = active_instances[instance_id]
+                method = getattr(instance, payload["method"])
+                result = method(*payload.get("args", ()), **payload.get("kwargs", {}))
+
+            elif action == "free_instance":
+                instance_id = payload["instance_id"]
+                del active_instances[instance_id]
+                result = True
+                
             response = {"success": True, "result": result}
         except Exception as e:
             response = {"success": False, "error": str(e), "trace": traceback.format_exc()}
+        
         resp_data = pickle.dumps(response)
         sys.stdout.buffer.write(struct.pack(">I", len(resp_data)) + resp_data)
         sys.stdout.flush()

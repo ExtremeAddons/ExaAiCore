@@ -74,8 +74,18 @@ class Orchestrator:
 
             if self._cancel_event.is_set(): return
 
+            # self.message_queue.put(("RUNNING", "Installing dependencies...", 0.85))
+            # manager = PackageManager(plan, self._cancel_event)
+            # manager.execute_installations()
+
             self.message_queue.put(("RUNNING", "Installing dependencies...", 0.85))
-            manager = PackageManager(plan, self._cancel_event)
+            manager = PackageManager(
+                plan,
+                cancel_event=self._cancel_event,
+                message_queue=self.message_queue,
+                base_progress=0.85,
+                max_progress=0.98
+            )
             manager.execute_installations()
 
             if self._cancel_event.is_set(): return
